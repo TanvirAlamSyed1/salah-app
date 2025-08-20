@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.salah_app.data.SalahRepository
 import com.example.salah_app.data.Timings
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -17,6 +18,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.delay
+import java.time.Duration
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 
 sealed interface SalahUiState {
@@ -25,7 +30,10 @@ sealed interface SalahUiState {
     data class Success(
         val timings: Timings,
         val city: String,
-        val country: String
+        val country: String,
+        val nextSalahName: String, // New: Name of the next prayer
+        val timeToNextSalah: Duration, // New: Time remaining
+        val currentTime: LocalTime // New: The current system time
     ) : SalahUiState
     data class Error(val message: String) : SalahUiState
 }
@@ -42,6 +50,61 @@ class SalahViewModel(
 
     private val _uiState = MutableStateFlow<SalahUiState>(SalahUiState.Loading)
     val uiState = _uiState.asStateFlow()
+
+    init {
+        // Start the timer when the ViewModel is created
+        startTimer()
+    }
+
+    // This is the main timer that runs every second
+    private fun startTimer() {
+        viewModelScope.launch {
+            while (true) {
+                // Check if the current state is Success
+                val currentState = _uiState.value
+                if (currentState is SalahUiState.Success) {
+                    val now = LocalTime.now()
+                    // Recalculate the next prayer based on the new time
+                    val (nextSalahName, timeToNextSalah) = findNextSalah(now, currentState.timings)
+                    // Update the state with the new time information
+                    _uiState.update {
+                        currentState.copy(
+                            currentTime = now,
+                            nextSalahName = nextSalahName,
+                            timeToNextSalah = timeToNextSalah
+                        )
+                    }
+                }
+                delay(1000L) // Wait for 1 second
+            }
+        }
+    }
+
+    // Helper function to find the next prayer and time remaining
+    private fun findNextSalah(currentTime: LocalTime, timings: Timings): Pair<String, Duration> {
+        val prayerTimeMap = mapOf(
+            "Fajr" to LocalTime.parse(timings.fajr, DateTimeFormatter.ofPattern("HH:mm")),
+            "Dhuhr" to LocalTime.parse(timings.dhuhr, DateTimeFormatter.ofPattern("HH:mm")),
+            "Asr" to LocalTime.parse(timings.asr, DateTimeFormatter.ofPattern("HH:mm")),
+            "Maghrib" to LocalTime.parse(timings.maghrib, DateTimeFormatter.ofPattern("HH:mm")),
+            "Isha" to LocalTime.parse(timings.isha, DateTimeFormatter.ofPattern("HH:mm"))
+        )
+
+        val nextPrayer = prayerTimeMap.entries.firstOrNull { (_, time) ->
+            currentTime.isBefore(time)
+        }
+
+        return if (nextPrayer != null) {
+            // If the next prayer is today
+            val duration = Duration.between(currentTime, nextPrayer.value)
+            Pair(nextPrayer.key, duration)
+        } else {
+            // If the next prayer is Fajr tomorrow
+            val fajrTime = prayerTimeMap["Fajr"]!!
+            val duration = Duration.between(currentTime, LocalTime.MAX).plus(Duration.between(LocalTime.MIN, fajrTime))
+            Pair("Fajr", duration)
+        }
+    }
 
     fun fetchPrayerTimesForLocation(location: Location) {
         viewModelScope.launch {
@@ -80,8 +143,12 @@ class SalahViewModel(
     private suspend fun getTimingsAndUpdateState(city: String, country: String) {
         salahRepository.getPrayerTimes(city, country)
             .onSuccess { timings ->
-                // Pass the city and country along with the timings
-                _uiState.update { SalahUiState.Success(timings, city, country) }
+                // Now, when we get the timings, we do an initial calculation
+                val now = LocalTime.now()
+                val (nextSalahName, timeToNextSalah) = findNextSalah(now, timings)
+                _uiState.update {
+                    SalahUiState.Success(timings, city, country, nextSalahName, timeToNextSalah, now)
+                }
             }
             .onFailure { error ->
                 _uiState.update { SalahUiState.Error(error.message ?: "Unknown error") }
