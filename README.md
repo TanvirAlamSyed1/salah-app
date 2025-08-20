@@ -1,6 +1,7 @@
 # Salah Times App 🕌
 
 A minimalist and modern Android application built with Jetpack Compose that displays daily prayer (Salah) times based on the user's current location.
+
 <img width="400" height="900" alt="image" src="https://github.com/user-attachments/assets/0dfadc00-c047-4c34-976c-7bc17c2fd532" />
 
 
