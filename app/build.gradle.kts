@@ -60,4 +60,6 @@ dependencies {
     implementation(libs.moshi.kotlin)
     implementation(libs.play.services.location)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.junit.ktx)
+    testImplementation(kotlin("test"))
 }

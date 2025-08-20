@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -30,11 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.salah_app.data.Prayer
 import com.example.salah_app.data.SalahRepository
 import com.example.salah_app.data.Timings
 import com.example.salah_app.ui.theme.SalahAppTheme
 import com.google.android.gms.location.LocationServices
-
 
 @Composable
 fun SalahScreen(
@@ -87,8 +89,27 @@ fun SalahScreen(
                     )
                 }
                 is SalahUiState.Success -> {
+                    // Create a list of prayer information
+                    val prayers = remember(state.timings) {
+                        listOf(
+                            Prayer(
+                                "Fajr",
+                                "The dawn prayer, performed before sunrise.",
+                                "Starts the day with spiritual reflection and is said to be worth more than the world and everything in it."
+                            ),
+                            Prayer("Dhuhr", "The midday prayer, performed after the sun has passed its zenith.", "Offers a break from daily work to remember God and seek guidance."),
+                            Prayer("Asr",  "The afternoon prayer, performed late in the afternoon.", "Considered a crucial prayer that signifies patience and perseverance."),
+                            Prayer("Maghrib", "The sunset prayer, performed just after sunset.", "Marks the end of the day and is a time for gratitude and seeking forgiveness."),
+                            Prayer("Isha", "The night prayer, performed after twilight has disappeared.", "Brings peace before sleep and is highly rewarded.")
+                        )
+                    }
+
+                    val timings = state.timings
+                    val scrollState = rememberScrollState()
                     Column(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -103,7 +124,7 @@ fun SalahScreen(
                                 fontWeight = FontWeight.Normal
                             )
                         }
-                        PrayerTimeCards(timings = state.timings)
+                        PrayerTimeCards(prayers = prayers ,timings = state.timings)
                     }
                 }
             }
@@ -112,36 +133,66 @@ fun SalahScreen(
 }
 
 @Composable
-private fun PrayerTimeCards(timings: Timings) {
+private fun PrayerTimeCards(prayers: List<Prayer>, timings: Timings) {
+    val prayerTimes = mapOf(
+        "Fajr" to timings.fajr, "Dhuhr" to timings.dhuhr, "Asr" to timings.asr,
+        "Maghrib" to timings.maghrib, "Isha" to timings.isha
+    )
+
+    // This Column will now arrange all cards vertically, one underneath another.
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp), // A bit more space between cards
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            SalahTimeClock(salahName = "Fajr", salahTime = timings.fajr, modifier = Modifier.weight(1f))
-            SalahTimeClock(salahName = "Dhuhr", salahTime = timings.dhuhr, modifier = Modifier.weight(1f))
-            SalahTimeClock(salahName = "Asr", salahTime = timings.asr, modifier = Modifier.weight(1f))
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(0.67f),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            SalahTimeClock(salahName = "Maghrib", salahTime = timings.maghrib, modifier = Modifier.weight(1f))
-            SalahTimeClock(salahName = "Isha", salahTime = timings.isha, modifier = Modifier.weight(1f))
+        // Loop through all prayers and create one card for each.
+        prayers.forEach { prayer ->
+            SalahTimeClock(
+                salahName = prayer.name,
+                salahTime = prayerTimes[prayer.name] ?: "",
+                salahDescription = prayer.description,
+                salahBenefits = prayer.benefits,
+                // Make each card take the full width of the screen.
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = false)
 @Composable
 fun SalahScreenPreview() {
     SalahAppTheme {
+        // 1. Create fake data for BOTH timings and the list of prayer details
         val fakeTimings = Timings("04:30", "13:15", "17:00", "20:30", "22:00")
+        val fakePrayers = listOf(
+            Prayer(
+                "Fajr",
+                "The dawn prayer, performed before sunrise.",
+                "Starts the day with spiritual reflection."
+            ),
+            Prayer(
+                "Dhuhr",
+                "The midday prayer, after the sun has passed its zenith.",
+                "Offers a break from daily work to remember God."
+            ),
+            Prayer(
+                "Asr",
+                "The afternoon prayer, performed late in the afternoon.",
+                "A crucial prayer signifying patience."
+            ),
+            Prayer(
+                "Maghrib",
+                "The sunset prayer, performed just after sunset.",
+                "A time for gratitude and seeking forgiveness."
+            ),
+            Prayer(
+                "Isha",
+                "The night prayer, after twilight has disappeared.",
+                "Brings peace before sleep."
+            )
+        )
 
-        // This preview now accurately shows the success UI
+        // The preview UI remains the same
         Scaffold { innerPadding ->
             Column(
                 modifier = Modifier
@@ -162,7 +213,8 @@ fun SalahScreenPreview() {
                         fontWeight = FontWeight.Normal
                     )
                 }
-                PrayerTimeCards(timings = fakeTimings)
+                // 2. Pass BOTH pieces of fake data to the updated function
+                PrayerTimeCards(prayers = fakePrayers, timings = fakeTimings)
             }
         }
     }
