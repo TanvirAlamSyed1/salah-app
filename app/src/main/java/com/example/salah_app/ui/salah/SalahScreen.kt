@@ -25,9 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.salah_app.data.Prayer
 import com.example.salah_app.data.SalahRepository
-import com.example.salah_app.data.Timings
 import com.google.android.gms.location.LocationServices
-import java.time.Duration
 
 @Composable
 fun SalahScreen(
@@ -97,13 +95,6 @@ fun SalahScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "Salah Times",
-                                style = MaterialTheme.typography.headlineMedium
-                            )
-                        }
-
                         Header(
                             nextSalahName = state.nextSalahName,
                             timeToNextSalah = state.timeToNextSalah
@@ -113,7 +104,12 @@ fun SalahScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Normal
                         )
-
+                        state.ayah?.let { ayahData ->
+                            AyahOfTheDayCard(
+                                ayahData = ayahData,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                         PrayerTimeCards(prayers = prayers, timings = state.timings)
                     }
                 }

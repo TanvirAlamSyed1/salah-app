@@ -32,3 +32,7 @@ val IshaBrush = Brush.verticalGradient(
 val ScreenBackgroundBrush = Brush.verticalGradient(
     colors = listOf(Color(0xFF3B4371), Color(0xFFF3904F))
 )
+
+val AyahBrush = Brush.verticalGradient(
+    colors = listOf(Color(0xFF26A69A), Color(0xFF80CBC4)) // Teal gradient
+)

@@ -5,8 +5,10 @@ import android.location.Address
 import android.location.Geocoder
 import android.location.Location
 import android.os.Build
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.salah_app.data.AyahData
 import com.example.salah_app.data.SalahRepository
 import com.example.salah_app.data.Timings
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +20,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -33,7 +34,8 @@ sealed interface SalahUiState {
         val country: String,
         val nextSalahName: String, // New: Name of the next prayer
         val timeToNextSalah: Duration, // New: Time remaining
-        val currentTime: LocalTime // New: The current system time
+        val currentTime: LocalTime, // New: The current system time
+        val ayah: AyahData? = null // Add this, make it nullable
     ) : SalahUiState
     data class Error(val message: String) : SalahUiState
 }
@@ -149,6 +151,7 @@ class SalahViewModel(
                 _uiState.update {
                     SalahUiState.Success(timings, city, country, nextSalahName, timeToNextSalah, now)
                 }
+                fetchRandomAyah()
             }
             .onFailure { error ->
                 _uiState.update { SalahUiState.Error(error.message ?: "Unknown error") }
@@ -166,6 +169,21 @@ class SalahViewModel(
                     continuation.resume(null)
                 }
             })
+        }
+    }
+
+    fun fetchRandomAyah() {
+        viewModelScope.launch {
+            val currentState = _uiState.value
+            if (currentState is SalahUiState.Success) {
+                salahRepository.getRandomAyah()
+                    .onSuccess { ayahData ->
+                        _uiState.update { currentState.copy(ayah = ayahData) }
+                    }
+                    .onFailure { error ->
+                        Log.e("SalahViewModel", "Failed to fetch Ayah", error)
+                    }
+            }
         }
     }
 }
