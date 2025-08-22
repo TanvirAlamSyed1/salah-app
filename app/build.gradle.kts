@@ -61,5 +61,6 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.junit.ktx)
+    implementation(libs.androidx.navigation.compose.jvmstubs)
     testImplementation(kotlin("test"))
 }

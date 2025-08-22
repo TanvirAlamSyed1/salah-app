@@ -1,15 +1,15 @@
 package com.example.salah_app.ui.salah
 
+// 1. Add these new imports for the snapping behavior
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.lazy.rememberLazyListState
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.salah_app.data.Prayer
@@ -28,13 +28,20 @@ fun PrayerTimeCards(prayers: List<Prayer>, timings: Timings) {
     )
     var expandedCardName by remember { mutableStateOf<String?>(null) }
 
-    // 1. Replace Column with a LazyRow for horizontal scrolling.
+    // 2. Create a state for the LazyRow to track its scroll position
+    val lazyListState = rememberLazyListState()
+
+    // 3. Create the snapping behavior using the list state
+    val flingBehavior = rememberSnapFlingBehavior(lazyListState = lazyListState)
+
     LazyRow(
-        // 2. Add some horizontal padding and space between items.
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp)
+        horizontalArrangement = Arrangement.spacedBy(20.dp), // A little less space looks cleaner
+        contentPadding = PaddingValues(horizontal = 24.dp), // A bit more padding to center the card
+
+        // 4. Pass the state and the new fling behavior to the LazyRow
+        state = lazyListState,
+        flingBehavior = flingBehavior
     ) {
-        // 3. Use the 'items' block, which is the standard for lazy lists.
         items(prayers) { prayer ->
             SalahTimeClock(
                 salahName = prayer.name,
@@ -42,19 +49,15 @@ fun PrayerTimeCards(prayers: List<Prayer>, timings: Timings) {
                 salahDescription = prayer.description,
                 salahBenefits = prayer.benefits,
                 brush = prayerBrushes[prayer.name] ?: FajrBrush,
-
-                // 2. Tell the card if it should be expanded.
                 isExpanded = (expandedCardName == prayer.name),
-
-                // 3. Tell the card what to do when clicked.
                 onClick = {
                     expandedCardName = if (expandedCardName == prayer.name) {
-                        null // If it's already expanded, collapse it.
+                        null
                     } else {
-                        prayer.name // Otherwise, expand this card.
+                        prayer.name
                     }
                 },
-                modifier = Modifier.width(320.dp)
+                modifier = Modifier.width(340.dp) // Adjusted width to fit padding
             )
         }
     }

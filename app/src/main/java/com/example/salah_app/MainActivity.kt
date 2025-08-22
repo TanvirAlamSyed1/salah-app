@@ -18,17 +18,15 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             SalahAppTheme {
-                // This Surface acts as the main canvas for your app
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()
-                        // Apply the gradient brush to this root surface
                         .background(ScreenBackgroundBrush)
                 ) {
+                    // Call the MainScreen which contains all your navigation logic
                     SalahScreen()
                 }
             }
         }
     }
 }
-
